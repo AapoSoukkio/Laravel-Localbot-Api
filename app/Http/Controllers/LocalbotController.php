@@ -3,18 +3,22 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class LocalbotController extends Controller
 {
-        public function sendMessage(Request $request)
+    public function sendMessage(Request $request)
     {
+        //TODO: This kind of works but there is a need for proper solution
         $userMessage = $request->input('message');
-        
-        // TODO: add the logic to communicate with Dockerized LLM
-        // This could involve sending a HTTP request to a web server running in Docker,
-        // or executing a Docker command directly if necessary.
-        
-        $botResponse = 'Response from aapo'; // Placeholder for actual LLM response
+        $containerId = ''; 
+        $command = escapeshellcmd("docker exec $containerId /bin/ollama run llama2 ' $userMessage '");
+        $output = [];
+        $resultCode = 0;
+
+        exec($command, $output, $resultCode);
+
+        $botResponse = implode("\n", $output);
 
         return response()->json(['message' => $botResponse]);
     }
