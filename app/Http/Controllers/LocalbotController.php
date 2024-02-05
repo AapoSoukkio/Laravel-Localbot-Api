@@ -8,18 +8,27 @@ use Illuminate\Support\Facades\Http;
 class LocalbotController extends Controller
 {
     public function sendMessage(Request $request)
-    {
-        //TODO: This kind of works but there is a need for proper solution
-        $userMessage = $request->input('message');
-        $containerId = ''; 
-        $command = escapeshellcmd("docker exec $containerId /bin/ollama run llama2 ' $userMessage '");
-        $output = [];
-        $resultCode = 0;
+{
+    $userMessage = $request->input('message');
 
-        exec($command, $output, $resultCode);
+    $postData = [
+        'model' => 'llama2',
+        'prompt' => $userMessage,
+        'stream' => false,
+        'format' => 'json'
+    ];
 
-        $botResponse = implode("\n", $output);
+    $response = Http::timeout(60) 
+               ->post('http://localhost:11434/api/generate', $postData);
 
-        return response()->json(['message' => $botResponse]);
+    // Decode the JSON response
+    $botResponse = $response->json();
+
+    if (isset($botResponse['response'])) {
+        return response()->json(['message' => $botResponse['response']]);
+    } else {
+        \Log::error('Unexpected response structure from LLM', ['response' => $botResponse]);
+        return response()->json(['error' => 'Unexpected response structure from LLM'], 500);
     }
+}
 }
